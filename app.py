@@ -3,15 +3,17 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient
 import os
 from azure.core.exceptions import ResourceNotFoundError
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 logging.basicConfig(level=logging.DEBUG)
 
 # Azure Blob Storage credentials
 account_name = os.getenv('AZURE_STORAGE_ACCOUNT_NAME')
 account_key = os.getenv('AZURE_STORAGE_ACCOUNT_KEY')
 
-# Debug prints
-print(f"Account Name: {account_name}")
-print(f"Account Key: {account_key}")
 
 if not account_name or not account_key:
     raise ValueError("Azure Storage account name and/or key not provided in environment variables.")
@@ -45,8 +47,19 @@ def load_images():
     per_page = 12
     offset = (page - 1) * per_page
     try:
-        blob_list = list(container_client.list_blobs())[offset:offset + per_page]
-        images = [{'name': blob.name, 'url': container_client.get_blob_client(blob.name).url} for blob in blob_list]
+        # Add logging to capture more details
+        logging.debug("Listing blobs in the container")
+        blob_list = container_client.list_blobs()
+        
+        # Correctly handle pagination
+        blobs = []
+        for i, blob in enumerate(blob_list):
+            if i >= offset and i < offset + per_page:
+                blobs.append(blob)
+            if i >= offset + per_page:
+                break
+
+        images = [{'name': blob.name, 'url': container_client.get_blob_client(blob.name).url} for blob in blobs]
         return jsonify({'images': images})
     except Exception as e:
         logging.exception("An error occurred while loading images:")
@@ -57,3 +70,4 @@ def delete_image(blob_name):
     blob_client = container_client.get_blob_client(blob_name)
     blob_client.delete_blob()
     return redirect(url_for('index'))
+

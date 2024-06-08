@@ -6,10 +6,6 @@
             "use": "@vercel/python",
             "config": {
                 "runtime": "python3.8"
-            },
-            "env": {
-                "AZURE_STORAGE_ACCOUNT_NAME": "yozuaiservice1353585945",
-                "AZURE_STORAGE_ACCOUNT_KEY": "aQYvk+s8Mv1VCSwo9tUxiUFdMttRteYvqMNEVhZGuWcrvLQ87bmrif7CYtegt3B4HVF22juILERm+ASt1N0A7g=="
             }
         }
     ],
