@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Blob Storage Example</title>
+    <style>
+        .image-card {
+            width: 200px;
+            margin: 10px;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            position: relative;
+        }
+        .image-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+        .delete-button {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Uploaded Images</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*">
+        <button type="submit">Upload</button>
+    </form>
+    <div id="image-container">
+        <!-- Images will be dynamically loaded here -->
+    </div>
+    <script>
+        let nextPage = 1;
+        let loading = false;
+        let endOfImages = false; // Track if all images are loaded
+
+        window.onload = function () {
+            loadImages();
+            window.addEventListener('scroll', function () {
+                if (window.innerHeight + window.scrollY >= document.body.offsetHeight && !loading && !endOfImages) {
+                    loadImages();
+                }
+            });
+        };
+
+        function loadImages() {
+            loading = true;
+            fetch(`/load?page=${nextPage}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.images.length > 0) {
+                        nextPage++;
+                        displayImages(data.images);
+                    } else {
+                        endOfImages = true; // No more images to load
+                    }
+                    loading = false;
+                })
+                .catch(error => {
+                    console.error('Error loading images:', error);
+                    loading = false;
+                });
+        }
+
+        function displayImages(images) {
+            const container = document.getElementById('image-container');
+            images.forEach(image => {
+                const card = document.createElement('div');
+                card.classList.add('image-card');
+                const img = document.createElement('img');
+                img.src = image.url;
+                img.alt = image.name;
+                card.appendChild(img);
+                
+                const deleteButton = document.createElement('button');
+                deleteButton.innerText = 'Delete';
+                deleteButton.classList.add('delete-button');
+                deleteButton.onclick = function() {
+                    deleteImage(image.name, card);
+                };
+                card.appendChild(deleteButton);
+
+                container.appendChild(card);
+            });
+        }
+
+        function deleteImage(blobName, card) {
+            fetch(`/delete/${blobName}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (response.ok) {
+                    card.remove();
+                } else {
+                    console.error('Failed to delete image');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting image:', error);
+            });
+        }
+    </script>
+</body>
+</html>
